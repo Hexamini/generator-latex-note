@@ -2,35 +2,49 @@
 var yeoman = require('yeoman-generator');
 var chalk = require('chalk');
 var yosay = require('yosay');
+var yaml = require('js-yaml');
 
 module.exports = yeoman.Base.extend({
-  prompting: function () {
-    // Have Yeoman greet the user.
-    this.log(yosay(
-      'Welcome to the funkadelic ' + chalk.red('generator-latex-note') + ' generator!'
-    ));
+  /**
+   * Store for the variables value readed in the Yaml file. The idea is
+   * keep all configurations in the Yaml file so it's easier to organize
+   * them than passing them via options in the command line.
+   */
+  configuration: undefined,
 
-    var prompts = [{
-      type: 'confirm',
-      name: 'someAnswer',
-      message: 'Would you like to enable this option?',
-      default: true
-    }];
-
-    return this.prompt(prompts).then(function (props) {
-      // To access props later use this.props.someAnswer;
-      this.props = props;
-    }.bind(this));
+  initializing: function () {
+      // Read the Yaml file to set the LaTeX variables
+      this.configuration = yaml.safeLoad(
+        this.read(this.destinationPath('notes.yml'), 'utf-8')
+      );
   },
 
   writing: function () {
-    this.fs.copy(
-      this.templatePath('dummyfile.txt'),
-      this.destinationPath('dummyfile.txt')
+    // Create the resource directory where keeping the lessons LaTeX files
+    this.directory(
+      this.templatePath('res'),
+      this.destinationPath('res')
     );
-  },
+    // Copy the main file LaTeX
+    this.fs.copy(
+      this.templatePath('main.tex'),
+      this.destinationPath('main.tex')
+    );
+    // Copy the make file to build the pdf file
+    this.fs.copy(
+      this.templatePath('Makefile'),
+      this.destinationPath('Makefile')
+    );
+    // Copy the list of LaTeX packages
+    this.fs.copy(
+      this.templatePath('config/package.tex'),
+      this.destinationPath('config/package.tex')
+    );
 
-  install: function () {
-    this.installDependencies();
+    this.fs.copyTpl(
+      this.templatePath('config/config.tex'),
+      this.destinationPath('config/config.tex'),
+      this.configuration
+    );
   }
 });
